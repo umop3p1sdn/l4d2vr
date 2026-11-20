@@ -1,0 +1,41 @@
+name: Arcade build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arcade]
+    paths: ["L4D2VR/**", ".github/workflows/arcade-build.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Build
+        id: candidate
+        shell: pwsh
+        run: |
+          python -B -X utf8 tools/build_candidate.py --skip-tests
+          if ($LASTEXITCODE -ne 0) { throw 'build failed' }
+      - name: Commit build to branch arcade-build
+        shell: pwsh
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CAND: ${{ steps.candidate.outputs.candidate }}
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP 'pub'
+          New-Item -ItemType Directory -Force $out | Out-Null
+          Copy-Item -Recurse -Force (Join-Path $env:CAND '*') $out
+          Set-Location $out
+          git init -q
+          git config user.name "arcade-build"
+          git config user.email "arcade-build@users.noreply.github.com"
+          git add -A
+          git commit -q -m "build $env:GITHUB_SHA"
+          git push -f "https://x-access-token:$env:TOKEN@github.com/$env:GITHUB_REPOSITORY.git" HEAD:refs/heads/arcade-build
