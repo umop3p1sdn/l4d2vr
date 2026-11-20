@@ -338,13 +338,13 @@ namespace l4d2vr_openxr_input
         // LeftHanded + LeftHandedSwapInputActions mirrors everything.
         //   weapon hand : trigger shoot | grip use + weapon grip | A reload | B menu
         //                 stick = weapon select (read by the arcade script as Walk) | stick click flashlight
-        //   free hand   : X recenter | Y HUD | trigger shove | stick = weapon select too | grip off-hand grip
+        //   free hand   : X recenter | Y HUD | trigger shove | stick = turning | grip off-hand grip
         //   shove       : swing gesture (no button)
         inline void TouchStyleBindings(Profile& p, const char* squeezeInput, const char* triggerInput,
             const char* leftPrimary, const char* leftSecondary)
         {
-            Stick(p, Action::Walk, Hand::Right, "/input/thumbstick");
-            Stick(p, Action::Walk, Hand::Left, "/input/thumbstick");
+            Stick(p, Action::Walk, Hand::Right, "/input/thumbstick");   // weapon hand: weapon select
+            Stick(p, Action::Turn, Hand::Left, "/input/thumbstick");    // free hand: turning
             Bind(p, Action::Flashlight, Hand::Right, "/input/thumbstick/click");
             Bind(p, Action::ResetPosition, Hand::Left, "/input/thumbstick/click");
             const bool analog = EndsWith(squeezeInput, "/value");
