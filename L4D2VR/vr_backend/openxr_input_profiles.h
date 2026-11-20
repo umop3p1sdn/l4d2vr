@@ -24,6 +24,7 @@
 //   Profiles without measured data use the closest controller and say so.
 
 #include <cstddef>
+#include <cstdio>
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -334,37 +335,72 @@ namespace l4d2vr_openxr_input
         // The layout every Touch-style controller (two face buttons per hand,
         // thumbsticks, analog or click grips) gets: SteamVR's
         // bindings_oculus_touch.json.
-        // L4D2 VR ARCADE layout (stationary arcade shooter). Right-handed base;
-        // LeftHanded + LeftHandedSwapInputActions mirrors everything.
-        //   weapon hand : trigger shoot | grip use + weapon grip | A reload | B menu
-        //                 stick = weapon select (read by the arcade script as Walk) | stick click flashlight
-        //   free hand   : X recenter | Y nothing | trigger shove | stick = turning | grip off-hand grip
-        //   shove       : swing gesture (no button)
+        // L4D2 VR ARCADE: is the player left-handed? Read once from VR\config.txt
+        // (LeftHanded=true). The bindings below are built for the chosen hand
+        // directly, so the runtime mirroring (LeftHandedSwapInputActions) is not
+        // needed and cannot drop actions when the controllers switch profile.
+        inline bool ArcadeLeftHanded()
+        {
+            static int cached = -1;
+            if (cached < 0)
+            {
+                cached = 0;
+                FILE* f = nullptr;
+#ifdef _MSC_VER
+                if (fopen_s(&f, "VR\\config.txt", "r") != 0) f = nullptr;
+#else
+                f = std::fopen("VR/config.txt", "r");
+#endif
+                if (f)
+                {
+                    char line[512];
+                    while (std::fgets(line, sizeof(line), f))
+                    {
+                        if (std::strncmp(line, "LeftHanded=", 11) == 0)
+                        {
+                            cached = (std::strncmp(line + 11, "true", 4) == 0 || line[11] == '1') ? 1 : 0;
+                            break;
+                        }
+                    }
+                    std::fclose(f);
+                }
+            }
+            return cached == 1;
+        }
+
+        // L4D2 VR ARCADE layout (stationary arcade shooter).
+        //   weapon hand : trigger shoot | grip use + weapon grip | A/X reload | B/Y menu
+        //                 stick = weapon select (read by the arcade script) | stick click flashlight
+        //   free hand   : trigger shove | grip off-hand grip | A/X recenter | stick = turning
         inline void TouchStyleBindings(Profile& p, const char* squeezeInput, const char* triggerInput,
             const char* leftPrimary, const char* leftSecondary)
         {
-            Stick(p, Action::Walk, Hand::Right, "/input/thumbstick");   // weapon hand: weapon select
-            Stick(p, Action::Turn, Hand::Left, "/input/thumbstick");    // free hand: turning
-            Bind(p, Action::Flashlight, Hand::Right, "/input/thumbstick/click");
-            Bind(p, Action::ResetPosition, Hand::Left, "/input/thumbstick/click");
+            const bool lefty = ArcadeLeftHanded();
+            const Hand W = lefty ? Hand::Left : Hand::Right;    // weapon hand
+            const Hand F = lefty ? Hand::Right : Hand::Left;    // free hand
+            const char* wPrimary = lefty ? leftPrimary : "/input/a/click";
+            const char* wSecondary = lefty ? leftSecondary : "/input/b/click";
+            const char* fPrimary = lefty ? "/input/a/click" : leftPrimary;
+
+            Stick(p, Action::Walk, W, "/input/thumbstick");
+            Stick(p, Action::Turn, F, "/input/thumbstick");
+            Bind(p, Action::Flashlight, W, "/input/thumbstick/click");
+            Bind(p, Action::ResetPosition, F, "/input/thumbstick/click");
             const bool analog = EndsWith(squeezeInput, "/value");
             const float gp = analog ? kGrabValuePress : 0.0f;
             const float gr = analog ? kGrabValueRelease : 0.0f;
-            Bind(p, Action::OffHandGrip, Hand::Left, squeezeInput, gp, gr);
-            Bind(p, Action::WeaponGrip, Hand::Right, squeezeInput, gp, gr);
-            Bind(p, Action::Use, Hand::Right, squeezeInput, gp, gr);
-            Bind(p, Action::PrimaryAttack, Hand::Right, triggerInput);
-            // Left-handed mode mirrors by reading the action on the matching input of the
-            // other hand, so every weapon-hand input needs a partner on the free hand.
-            Bind(p, Action::SecondaryAttack, Hand::Left, triggerInput);
-            Bind(p, Action::Reload, Hand::Right, "/input/a/click");
-            Bind(p, Action::ActivateVR, Hand::Right, "/input/a/click");
-            Bind(p, Action::MenuSelect, Hand::Right, "/input/a/click");
-            Bind(p, Action::Pause, Hand::Right, "/input/b/click");
-            Bind(p, Action::MenuBack, Hand::Right, "/input/b/click");
-            MenuDpad(p, Hand::Left, "/input/thumbstick");
-            Bind(p, Action::ResetPosition, Hand::Left, leftPrimary);
-            Bind(p, Action::CustomAction5, Hand::Left, leftSecondary);   // partner of B (menu); does nothing by default
+            Bind(p, Action::WeaponGrip, W, squeezeInput, gp, gr);
+            Bind(p, Action::Use, W, squeezeInput, gp, gr);
+            Bind(p, Action::OffHandGrip, F, squeezeInput, gp, gr);
+            Bind(p, Action::PrimaryAttack, W, triggerInput);
+            Bind(p, Action::SecondaryAttack, F, triggerInput);
+            Bind(p, Action::Reload, W, wPrimary);
+            Bind(p, Action::ActivateVR, W, wPrimary);
+            Bind(p, Action::MenuSelect, W, wPrimary);
+            Bind(p, Action::Pause, W, wSecondary);
+            Bind(p, Action::MenuBack, W, wSecondary);
+            MenuDpad(p, F, "/input/thumbstick");
+            Bind(p, Action::ResetPosition, F, fPrimary);
             // Opus voice push-to-talk: the left menu button is otherwise unused.
             Bind(p, Action::VoicePushToTalk, Hand::Left, "/input/menu/click");
         }
