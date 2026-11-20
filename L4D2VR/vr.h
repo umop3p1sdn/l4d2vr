@@ -2436,6 +2436,7 @@ public:
 	VRWorldPoseTrackingSnapshot m_WorldPoseTrackingSnapshot{};
 
 	float m_RotationOffset = 0;
+	bool m_ArcadeNoWalk = false;   // L4D2 VR Arcade: stick selects weapons, no walking
 	std::chrono::steady_clock::time_point m_PrevFrameTime;
 	std::chrono::steady_clock::time_point m_LastCompositorErrorLog{};
 

@@ -338,7 +338,7 @@ namespace l4d2vr_openxr_input
         // LeftHanded + LeftHandedSwapInputActions mirrors everything.
         //   weapon hand : trigger shoot | grip use + weapon grip | A reload | B menu
         //                 stick = weapon select (read by the arcade script as Walk) | stick click flashlight
-        //   free hand   : X recenter | Y HUD | trigger shove | stick = turning | grip off-hand grip
+        //   free hand   : X recenter | Y nothing | trigger shove | stick = turning | grip off-hand grip
         //   shove       : swing gesture (no button)
         inline void TouchStyleBindings(Profile& p, const char* squeezeInput, const char* triggerInput,
             const char* leftPrimary, const char* leftSecondary)
@@ -364,7 +364,7 @@ namespace l4d2vr_openxr_input
             Bind(p, Action::MenuBack, Hand::Right, "/input/b/click");
             MenuDpad(p, Hand::Left, "/input/thumbstick");
             Bind(p, Action::ResetPosition, Hand::Left, leftPrimary);
-            Bind(p, Action::ShowHUD, Hand::Left, leftSecondary);   // partner of B (menu)
+            Bind(p, Action::CustomAction5, Hand::Left, leftSecondary);   // partner of B (menu); does nothing by default
             // Opus voice push-to-talk: the left menu button is otherwise unused.
             Bind(p, Action::VoicePushToTalk, Hand::Left, "/input/menu/click");
         }

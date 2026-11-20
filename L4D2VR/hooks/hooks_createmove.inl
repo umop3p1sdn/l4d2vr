@@ -425,6 +425,15 @@ bool __fastcall Hooks::dCreateMove(void* ecx, void* edx, float flInputSampleTime
 			if (moveNx > 0.5f)      cmd->buttons |= (1 << 10);
 			else if (moveNx < -0.5f)cmd->buttons |= (1 << 9);
 
+			// L4D2 VR Arcade: the stick only selects weapons (the script reads the
+			// direction buttons above); the player does not walk.
+			if (m_VR->m_ArcadeNoWalk)
+			{
+				hadWalkAxis = false;
+				walkNx = walkNy = 0.f;
+				m_VR->m_PushingThumbstick = false;
+			}
+
 		}
 		else
 		{

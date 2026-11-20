@@ -1079,6 +1079,16 @@ namespace
         Game::logMsg("[VR][Arcade] face %.1f (turned %.1f)", yaw, delta);
     }
 
+    void __cdecl OnL4D2VRArcadeCommand(const SourceCCommand& command)
+    {
+        if (!g_Game || !g_Game->m_VR || command.ArgC() < 2)
+            return;
+        const char* text = command.Arg(1);
+        const bool on = text && text[0] == '1';
+        g_Game->m_VR->m_ArcadeNoWalk = on;
+        Game::logMsg("[VR][Arcade] stick walking %s", on ? "off (weapon select)" : "on");
+    }
+
     void __cdecl OnVROptionsCommand(const SourceCCommand&)
     {
         L4D2VRConfigOverlay_OpenOptions();
@@ -1095,6 +1105,9 @@ namespace
         g_OriginalCachePrintSummaryCommand->Dispatch(command);
     }
 
+    SourceRegisteredConCommand g_L4D2VRArcadeCommand(
+        "l4d2vr_arcade", &OnL4D2VRArcadeCommand,
+        "L4D2 VR Arcade: 1 = the walk stick selects weapons, 0 = normal walking.", kFcvarServerCanExecute);
     SourceRegisteredConCommand g_L4D2VRFaceCommand(
         "l4d2vr_face", &OnL4D2VRFaceCommand,
         "L4D2 VR Arcade: look toward a world yaw.", kFcvarServerCanExecute);
@@ -1213,6 +1226,8 @@ namespace
                 cvar->RegisterConCommand(&g_L4D2VRPoseAckCommand);
             if (!cvar->FindCommandBase(kL4D2VRPoseReceiveCommandName))
                 cvar->RegisterConCommand(&g_L4D2VRPoseReceiveCommand);
+            if (!cvar->FindCommandBase("l4d2vr_arcade"))
+                cvar->RegisterConCommand(&g_L4D2VRArcadeCommand);
             if (!cvar->FindCommandBase("l4d2vr_face"))
                 cvar->RegisterConCommand(&g_L4D2VRFaceCommand);
             if (!cvar->FindCommandBase(kVRConfigCommandName))
