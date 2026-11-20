@@ -338,12 +338,11 @@ namespace l4d2vr_openxr_input
         // LeftHanded + LeftHandedSwapInputActions mirrors everything.
         //   weapon hand : trigger shoot | grip use + weapon grip | A reload | B menu
         //                 stick = weapon select (read by the arcade script as Walk) | stick click flashlight
-        //   free hand   : X recenter | stick = weapon select too | grip off-hand grip
+        //   free hand   : X recenter | Y HUD | trigger shove | stick = weapon select too | grip off-hand grip
         //   shove       : swing gesture (no button)
         inline void TouchStyleBindings(Profile& p, const char* squeezeInput, const char* triggerInput,
             const char* leftPrimary, const char* leftSecondary)
         {
-            (void)leftSecondary;
             Stick(p, Action::Walk, Hand::Right, "/input/thumbstick");
             Stick(p, Action::Walk, Hand::Left, "/input/thumbstick");
             Bind(p, Action::Flashlight, Hand::Right, "/input/thumbstick/click");
@@ -355,6 +354,9 @@ namespace l4d2vr_openxr_input
             Bind(p, Action::WeaponGrip, Hand::Right, squeezeInput, gp, gr);
             Bind(p, Action::Use, Hand::Right, squeezeInput, gp, gr);
             Bind(p, Action::PrimaryAttack, Hand::Right, triggerInput);
+            // Left-handed mode mirrors by reading the action on the matching input of the
+            // other hand, so every weapon-hand input needs a partner on the free hand.
+            Bind(p, Action::SecondaryAttack, Hand::Left, triggerInput);
             Bind(p, Action::Reload, Hand::Right, "/input/a/click");
             Bind(p, Action::ActivateVR, Hand::Right, "/input/a/click");
             Bind(p, Action::MenuSelect, Hand::Right, "/input/a/click");
@@ -362,6 +364,7 @@ namespace l4d2vr_openxr_input
             Bind(p, Action::MenuBack, Hand::Right, "/input/b/click");
             MenuDpad(p, Hand::Left, "/input/thumbstick");
             Bind(p, Action::ResetPosition, Hand::Left, leftPrimary);
+            Bind(p, Action::ShowHUD, Hand::Left, leftSecondary);   // partner of B (menu)
             // Opus voice push-to-talk: the left menu button is otherwise unused.
             Bind(p, Action::VoicePushToTalk, Hand::Left, "/input/menu/click");
         }

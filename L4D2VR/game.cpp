@@ -1058,6 +1058,27 @@ namespace
         L4D2VRConfigOverlay_Open();
     }
 
+    // L4D2 VR Arcade: after a teleport the arcade script sends "l4d2vr_face <yaw>"
+    // so the player looks along the route; turning is off in the arcade.
+    void __cdecl OnL4D2VRFaceCommand(const SourceCCommand& command)
+    {
+        if (!g_Game || !g_Game->m_VR || command.ArgC() < 2)
+            return;
+        const char* text = command.Arg(1);
+        if (!text || !*text)
+            return;
+        char* end = nullptr;
+        const float yaw = std::strtof(text, &end);
+        if (end == text || !std::isfinite(yaw))
+            return;
+        VR* vr = g_Game->m_VR;
+        float delta = yaw - vr->m_HmdAngAbs.y;
+        delta -= 360.0f * std::floor((delta + 180.0f) / 360.0f);
+        vr->m_RotationOffset += delta;
+        vr->m_RotationOffset -= 360.0f * std::floor(vr->m_RotationOffset / 360.0f);
+        Game::logMsg("[VR][Arcade] face %.1f (turned %.1f)", yaw, delta);
+    }
+
     void __cdecl OnVROptionsCommand(const SourceCCommand&)
     {
         L4D2VRConfigOverlay_OpenOptions();
@@ -1074,6 +1095,9 @@ namespace
         g_OriginalCachePrintSummaryCommand->Dispatch(command);
     }
 
+    SourceRegisteredConCommand g_L4D2VRFaceCommand(
+        "l4d2vr_face", &OnL4D2VRFaceCommand,
+        "L4D2 VR Arcade: look toward a world yaw.", kFcvarServerCanExecute);
     SourceRegisteredConCommand g_L4D2VRServerAckCommand(
         kL4D2VRServerAckCommandName,
         &OnL4D2VRServerAckCommand,
@@ -1189,6 +1213,8 @@ namespace
                 cvar->RegisterConCommand(&g_L4D2VRPoseAckCommand);
             if (!cvar->FindCommandBase(kL4D2VRPoseReceiveCommandName))
                 cvar->RegisterConCommand(&g_L4D2VRPoseReceiveCommand);
+            if (!cvar->FindCommandBase("l4d2vr_face"))
+                cvar->RegisterConCommand(&g_L4D2VRFaceCommand);
             if (!cvar->FindCommandBase(kVRConfigCommandName))
                 cvar->RegisterConCommand(&g_VRConfigCommand);
             if (!cvar->FindCommandBase(kVROptionsCommandName))
