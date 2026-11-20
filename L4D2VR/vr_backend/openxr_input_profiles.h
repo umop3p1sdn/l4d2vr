@@ -334,26 +334,34 @@ namespace l4d2vr_openxr_input
         // The layout every Touch-style controller (two face buttons per hand,
         // thumbsticks, analog or click grips) gets: SteamVR's
         // bindings_oculus_touch.json.
+        // L4D2 VR ARCADE layout (stationary arcade shooter). Right-handed base;
+        // LeftHanded + LeftHandedSwapInputActions mirrors everything.
+        //   weapon hand : trigger shoot | grip use + weapon grip | A reload | B menu
+        //                 stick = weapon select (read by the arcade script as Walk) | stick click flashlight
+        //   free hand   : X recenter | stick = weapon select too | grip off-hand grip
+        //   shove       : swing gesture (no button)
         inline void TouchStyleBindings(Profile& p, const char* squeezeInput, const char* triggerInput,
             const char* leftPrimary, const char* leftSecondary)
         {
+            (void)leftSecondary;
+            Stick(p, Action::Walk, Hand::Right, "/input/thumbstick");
             Stick(p, Action::Walk, Hand::Left, "/input/thumbstick");
-            Bind(p, Action::ResetPosition, Hand::Left, "/input/thumbstick/click");
-            Stick(p, Action::Turn, Hand::Right, "/input/thumbstick");
             Bind(p, Action::Flashlight, Hand::Right, "/input/thumbstick/click");
+            Bind(p, Action::ResetPosition, Hand::Left, "/input/thumbstick/click");
             const bool analog = EndsWith(squeezeInput, "/value");
-            Bind(p, Action::OffHandGrip, Hand::Left, squeezeInput, analog ? kGrabValuePress : 0.0f, analog ? kGrabValueRelease : 0.0f);
-            Bind(p, Action::WeaponGrip, Hand::Right, squeezeInput, analog ? kGrabValuePress : 0.0f, analog ? kGrabValueRelease : 0.0f);
+            const float gp = analog ? kGrabValuePress : 0.0f;
+            const float gr = analog ? kGrabValueRelease : 0.0f;
+            Bind(p, Action::OffHandGrip, Hand::Left, squeezeInput, gp, gr);
+            Bind(p, Action::WeaponGrip, Hand::Right, squeezeInput, gp, gr);
+            Bind(p, Action::Use, Hand::Right, squeezeInput, gp, gr);
             Bind(p, Action::PrimaryAttack, Hand::Right, triggerInput);
-            Bind(p, Action::SecondaryAttack, Hand::Left, triggerInput);
-            Bind(p, Action::Use, Hand::Right, "/input/b/click");
-            Bind(p, Action::MenuBack, Hand::Right, "/input/b/click");
+            Bind(p, Action::Reload, Hand::Right, "/input/a/click");
             Bind(p, Action::ActivateVR, Hand::Right, "/input/a/click");
-            Bind(p, Action::MagazineRelease, Hand::Right, "/input/a/click");
             Bind(p, Action::MenuSelect, Hand::Right, "/input/a/click");
+            Bind(p, Action::Pause, Hand::Right, "/input/b/click");
+            Bind(p, Action::MenuBack, Hand::Right, "/input/b/click");
             MenuDpad(p, Hand::Left, "/input/thumbstick");
-            Bind(p, Action::Flashlight, Hand::Left, leftPrimary);
-            Bind(p, Action::Pause, Hand::Left, leftSecondary);
+            Bind(p, Action::ResetPosition, Hand::Left, leftPrimary);
             // Opus voice push-to-talk: the left menu button is otherwise unused.
             Bind(p, Action::VoicePushToTalk, Hand::Left, "/input/menu/click");
         }
